@@ -152,7 +152,7 @@ function home() {
       tile("Mes erreurs", ko ? `${ko} à refaire` : "Rien à refaire", () => ko ? run(review()) : toast("Aucune erreur à refaire pour l'instant")),
       tile("Fiches résumé", "Tout un chapitre sur un écran", () => sheets()),
       tile("Écrire du code", "Exercices sur papier ou au clavier", () => run(byType(WRITE_TYPES, "Écrire du code")))),
-    h("p", { class: "foot" }, "Fonctionne hors ligne. Votre progression reste sur cet iPad.")
+    h("p", { class: "foot" }, "Fonctionne hors ligne. Votre progression reste sur cet appareil.")
   );
   window.scrollTo(0, 0);
 }
@@ -382,7 +382,7 @@ function questionCard(ex, onResult, next) {
   if (ex.type === "qcm") {
     let answered = false;
     const opts = h("div", { class: "opts" });
-    const fb = h("div");
+    const fb = h("div", { class: "stack" });
     ex.opts.forEach((o, i) => opts.append(h("button", { type: "button", class: "opt", onclick: e => {
       if (answered) return; answered = true;
       const ok = i === ex.a;
@@ -401,7 +401,7 @@ function questionCard(ex, onResult, next) {
     if (poolIdx.every((v, i) => ex.lines[v] === ex.lines[i])) poolIdx.push(poolIdx.shift());
     let answer = [];
     let checked = false;
-    const wrap = h("div");
+    const wrap = h("div", { class: "stack" });
     function draw() {
       const per = checked ? answer.map((li, pos) => ex.lines[li] === ex.lines[pos]) : null;
       rc(wrap, 
@@ -429,7 +429,7 @@ function questionCard(ex, onResult, next) {
     const choices = ex.blanks.map(b => shuffle(b.opts, rnd));
     const filled = ex.blanks.map(() => null);
     let active = 0, checked = false;
-    const wrap = h("div");
+    const wrap = h("div", { class: "stack" });
     const letter = i => "abcdefgh"[i];
     function draw() {
       const parts = ex.code.split(/\[\[(\d+)\]\]/);
@@ -467,7 +467,7 @@ function questionCard(ex, onResult, next) {
 
   /* Questions ouvertes, sur papier, exercices pratiques : auto-évaluation */
   let revealed = false, hints = 0;
-  const wrap = h("div");
+  const wrap = h("div", { class: "stack" });
   function draw() {
     const items = [];
     if (!revealed) {
