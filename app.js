@@ -15,9 +15,37 @@ const WRITE_TYPES = ["paper", "practice"];                // écrire du code
 
 /* ---------- État ---------- */
 const KEY = "revipad-v1";
-let state = { ex: {}, read: {}, xp: 0, bestCombo: 0, days: [], course: "both" };
+let state = { ex: {}, read: {}, xp: 0, xpBy: {}, bestCombo: 0, days: [], course: "both", device: "" };
 try { const raw = localStorage.getItem(KEY); if (raw) state = Object.assign(state, JSON.parse(raw)); } catch (e) {}
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+if (!state.device) state.device = Math.random().toString(36).slice(2, 10);
+state.xpBy = state.xpBy || {};
+if (state.xp && !Object.keys(state.xpBy).length) state.xpBy[state.device] = state.xp;   // ancienne version
+const totalXp = () => Object.values(state.xpBy).reduce((a, n) => a + n, 0);
+state.xp = totalXp();
+function save() { state.xp = totalXp(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+/* ---------- Synchronisation par code (AirDrop, Messages…) ---------- */
+function exportCode() {
+  const data = { v: 1, ex: state.ex, read: state.read, xpBy: state.xpBy, bestCombo: state.bestCombo, days: state.days };
+  return "REVISIONS1:" + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+function importCode(code) {
+  const m = String(code).match(/REVISIONS1:([A-Za-z0-9+/=]+)/);
+  if (!m) throw new Error("Code non reconnu");
+  const d = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+  let changed = 0;
+  for (const [id, e] of Object.entries(d.ex || {})) {           // la réponse la plus récente gagne
+    const mine = state.ex[id];
+    const newer = !mine || (e.t || 0) > (mine.t || 0) || ((e.t || 0) === (mine.t || 0) && e.s === "ok" && mine.s !== "ok");
+    if (newer && exById[id]) { state.ex[id] = e; changed++; }
+  }
+  for (const id of Object.keys(d.read || {})) state.read[id] = true;
+  for (const [dev, xp] of Object.entries(d.xpBy || {})) state.xpBy[dev] = Math.max(state.xpBy[dev] || 0, xp);
+  state.bestCombo = Math.max(state.bestCombo, d.bestCombo || 0);
+  state.days = [...new Set([...state.days, ...(d.days || [])])].sort();
+  save();
+  return changed;
+}
 (function markToday() {
   const d = new Date();
   const t = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -87,7 +115,7 @@ function award(ok, selfGraded) {
     combo++;
     const bonus = Math.min(combo - 1, 5) * 2;
     const gain = (selfGraded ? 5 : 10) + bonus;
-    state.xp += gain;
+    state.xpBy[state.device] = (state.xpBy[state.device] || 0) + gain;
     state.bestCombo = Math.max(state.bestCombo, combo);
     save();
     toast(combo >= 3 ? `+${gain} XP · série de ${combo}` : `+${gain} XP`);
@@ -152,6 +180,8 @@ function home() {
       tile("Mes erreurs", ko ? `${ko} à refaire` : "Rien à refaire", () => ko ? run(review()) : toast("Aucune erreur à refaire pour l'instant")),
       tile("Fiches résumé", "Tout un chapitre sur un écran", () => sheets()),
       tile("Écrire du code", "Exercices sur papier ou au clavier", () => run(byType(WRITE_TYPES, "Écrire du code")))),
+    h("button", { type: "button", class: "row sync-row", onclick: () => syncScreen() },
+      h("span", { class: "row-main" }, h("span", { class: "row-t" }, "Synchroniser iPhone et iPad"), h("span", { class: "row-s" }, "Envoyer ou recevoir la progression par AirDrop")), h("span", { class: "chev" }, "›")),
     h("p", { class: "foot" }, "Fonctionne hors ligne. Votre progression reste sur cet appareil.")
   );
   window.scrollTo(0, 0);
@@ -270,6 +300,51 @@ function confetti() {
   })();
 }
 
+/* ---------- Écran de synchronisation ---------- */
+function syncScreen(message) {
+  const code = exportCode();
+  const answered = Object.keys(state.ex).length;
+  const ta = h("textarea", { id: "sync-in", "aria-label": "Code reçu", placeholder: "Touchez ici, puis Coller" });
+  const status = h("p", { class: "muted", role: "status" });
+  app.replaceChildren(
+    h("div", { class: "topbar" }, h("button", { type: "button", class: "back", onclick: home }, "‹ Accueil"), h("span"), h("span")),
+    h("div", { class: "s-head" }, h("div", { class: "eyebrow" }, "Synchroniser"), h("h2", null, "iPhone et iPad")),
+    h("article", { class: "card" },
+      h("h3", null, "1. Sur l'appareil qui envoie"),
+      h("p", null, `Cette progression contient ${answered} réponses et ${state.xp} XP.`),
+      h("div", { class: "actions" },
+        h("button", { type: "button", class: "btn main", onclick: async () => {
+          try {
+            if (navigator.share) { await navigator.share({ title: "Ma progression de révisions", text: code }); return; }
+            throw new Error("pas de partage");
+          } catch (e) {
+            if (e && e.name === "AbortError") return;
+            try { await navigator.clipboard.writeText(code); status.textContent = "Code copié. Collez-le dans Messages ou Notes pour l'envoyer."; }
+            catch (e2) { codeBox.hidden = false; status.textContent = "Sélectionnez le code ci-dessous et copiez-le."; }
+          }
+        } }, "Envoyer ma progression"),
+        h("button", { type: "button", class: "btn", onclick: async () => {
+          try { await navigator.clipboard.writeText(code); status.textContent = "Code copié."; }
+          catch (e) { codeBox.hidden = false; status.textContent = "Sélectionnez le code ci-dessous et copiez-le."; }
+        } }, "Copier le code")),
+      status),
+    h("article", { class: "card" },
+      h("h3", null, "2. Sur l'appareil qui reçoit"),
+      h("p", null, "Collez le code reçu par AirDrop ou Messages. Les deux progressions sont fusionnées : rien n'est perdu, et pour chaque question, c'est la réponse la plus récente qui compte."),
+      ta,
+      h("div", { class: "actions" }, h("button", { type: "button", class: "btn main", onclick: () => {
+        try { const n = importCode(ta.value); syncScreen(`Fusion réussie : ${n} réponse${n > 1 ? "s" : ""} mise${n > 1 ? "s" : ""} à jour. Vous avez maintenant ${state.xp} XP.`); toast("Progression fusionnée"); }
+        catch (e) { status2.textContent = "Ce code n'est pas reconnu. Vérifiez qu'il commence par REVISIONS1: et qu'il est complet."; }
+      } }, "Fusionner"))),
+    h("p", { class: "foot" }, "Astuce : faites l'échange dans les deux sens (iPhone vers iPad, puis iPad vers iPhone) pour avoir exactement la même progression sur les deux.")
+  );
+  const codeBox = h("textarea", { readonly: true, hidden: true, "aria-label": "Votre code" }, code);
+  const status2 = h("p", { class: "muted", role: "status" }, message || "");
+  app.children[2].append(codeBox);
+  app.children[3].append(status2);
+  window.scrollTo(0, 0);
+}
+
 /* ---------- Listes ---------- */
 function chapters() {
   rc(app, 
@@ -370,7 +445,7 @@ const KICKER = { qcm: "Choisissez une réponse", open: "Répondez, puis regardez
 function questionCard(ex, onResult, next) {
   const card = h("article", { class: "card q-card" });
   const course = courseOf(ex);
-  const done = (ok, selfGraded) => { state.ex[ex.id] = { s: ok ? "ok" : "ko" }; save(); onResult(ok, selfGraded); };
+  const done = (ok, selfGraded) => { state.ex[ex.id] = { s: ok ? "ok" : "ko", t: Date.now() }; save(); onResult(ok, selfGraded); };
   const nextBtn = () => h("div", { class: "actions" }, h("button", { type: "button", class: "btn main wide", onclick: next }, "Continuer"));
   const head = () => [
     h("div", { class: "q-top" }, h("span", { class: "pill " + course }, COURSE[course]), h("span", { class: "pill" }, chapterById[ex.ch].title)),

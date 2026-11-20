@@ -210,7 +210,7 @@ th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; colo
 .end-stats span { color: var(--muted); font-size: 0.85rem; }
 
 /* Divers */
-#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--surface); padding: 10px 18px; border-radius: 999px; font-weight: 700; opacity: 0; pointer-events: none; z-index: 20; }
+#toast { white-space: nowrap; position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--surface); padding: 10px 18px; border-radius: 999px; font-weight: 700; opacity: 0; pointer-events: none; z-index: 20; }
 #toast.show { animation: toast 1.6s ease-out; }
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: grid; place-items: center; z-index: 30; padding: 20px; }
 .modal-card { background: var(--surface); border-radius: 18px; padding: 22px; max-width: 420px; display: grid; gap: 16px; }
@@ -219,6 +219,8 @@ th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; colo
 @keyframes toast { 0% { opacity: 0; transform: translate(-50%, 20px); } 15%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -10px); } }
 
 .stack { display: grid; gap: 14px; }
+.sync-row { margin-top: 2px; }
+textarea[hidden] { display: none; }
 .stack:empty { display: none; }
 /* Empêche les longues lignes de code d'élargir la page (enfants de grille et de flex) */
 #app > *, .card, .card > *, .q-card > div, .anim, .anim > *, .fill-pick, .ord-answer, .ord-pool, .opts { min-width: 0; }

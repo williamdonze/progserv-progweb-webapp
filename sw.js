@@ -1,6 +1,6 @@
 // Service worker : met toute l'application en cache pour qu'elle marche hors ligne.
 // Changez VERSION à chaque mise à jour du contenu pour forcer le rafraîchissement.
-const VERSION = 'revisions-v2';
+const VERSION = 'revisions-v3';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'data.js', 'manifest.webmanifest',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
