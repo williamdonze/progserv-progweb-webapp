@@ -230,10 +230,6 @@ pre { max-width: 100%; }
 
 
 /* Compléter : loupe et confort de lecture */
-.fill-zoom { display: none; }
-.zb { border: 2px dashed var(--muted); border-radius: 8px; padding: 0 6px; color: var(--muted); }
-.zb.filled { border-style: solid; color: var(--ink); }
-.zb.active { border-color: var(--accent); color: var(--accent); background: var(--hl); }
 .blank { vertical-align: baseline; line-height: 1.5; }
 
 /* Téléphone (iPhone 16 Pro Max : 440 px de large) */
@@ -268,9 +264,6 @@ pre { max-width: 100%; }
   .fill-code { padding: 12px 10px; }
   .fill-code code { font-size: 0.95em; line-height: 2.3; }
   .blank { padding: 1px 6px; min-width: 2.8em; border-radius: 7px; }
-  .fill-zoom { display: grid; gap: 8px; background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 14px; }
-  .fill-zoom-l { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
-  .fill-zoom code { background: none; padding: 0; font-size: 1.12rem; line-height: 2; white-space: pre-wrap; word-break: break-word; }
   .fill-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .fill-opt { min-height: 58px; padding: 6px 10px; }
   .fill-opt code { font-size: 1.05rem; white-space: normal; word-break: break-word; }
