@@ -515,7 +515,18 @@ function questionCard(ex, onResult, next) {
         return h("button", { type: "button", class: cls, disabled: checked, onclick: () => { active = i; draw(); } }, filled[i] ?? `(${letter(i)})`);
       })));
       const allFilled = filled.every(v => v !== null);
-      rc(wrap, pre,
+      /* Loupe : la ligne du trou sélectionné, en grand (utile sur téléphone) */
+      const codeLines = ex.code.split("\n");
+      const lineNo = codeLines.findIndex(l => l.includes(`[[${active}]]`));
+      const zoomParts = (codeLines[lineNo] || "").trim().split(/\[\[(\d+)\]\]/);
+      const zoom = !checked && lineNo >= 0 ? h("div", { class: "fill-zoom", "aria-hidden": "true" },
+        h("div", { class: "fill-zoom-l" }, `Ligne ${lineNo + 1}`),
+        h("code", null, zoomParts.map((p, k) => {
+          if (k % 2 === 0) return p;
+          const i = +p;
+          return h("span", { class: "zb" + (i === active ? " active" : "") + (filled[i] ? " filled" : "") }, filled[i] ?? `(${letter(i)})`);
+        }))) : null;
+      rc(wrap, pre, zoom,
         !checked ? h("div", { class: "fill-pick" },
           h("div", { class: "ord-label" }, `Trou (${letter(active)})`),
           h("div", { class: "fill-opts" }, choices[active].map(o => h("button", { type: "button", class: "fill-opt" + (filled[active] === o ? " on" : ""), onclick: () => {
